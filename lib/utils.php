@@ -18,31 +18,108 @@ final class Json
     }
 }
 
-function create_sane_stacktrace(\Throwable $e): array
+/**
+ * Get the home page url of rss-bridge e.g. 'https://example.com/' or 'https://example.com/bridge/'
+ */
+function get_home_page_url(): string
+{
+    $https = $_SERVER['HTTPS'] ?? '';
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    if (($pos = strpos($uri, '?')) !== false) {
+        $uri = substr($uri, 0, $pos);
+    }
+    $scheme = $https === 'on' ? 'https' : 'http';
+    return "$scheme://$host$uri";
+}
+
+/**
+ * Get the full current url e.g. 'http://example.com/?action=display&bridge=FooBridge'
+ */
+function get_current_url(): string
+{
+    $https = $_SERVER['HTTPS'] ?? '';
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    $scheme = $https === 'on' ? 'https' : 'http';
+    return "$scheme://$host$uri";
+}
+
+function create_sane_exception_message(\Throwable $e): string
+{
+    return sprintf(
+        '%s: %s in %s line %s',
+        get_class($e),
+        $e->getMessage(),
+        trim_path_prefix($e->getFile()),
+        $e->getLine()
+    );
+}
+
+/**
+ * Returns e.g. https://github.com/RSS-Bridge/rss-bridge/blob/master/bridges/AO3Bridge.php#L8
+ */
+function render_github_url(string $file, int $line, string $revision = 'master'): string
+{
+    return sprintf('https://github.com/RSS-Bridge/rss-bridge/blob/%s/%s#L%s', $revision, $file, $line);
+}
+
+function trace_from_exception(\Throwable $e): array
 {
     $frames = array_reverse($e->getTrace());
     $frames[] = [
         'file' => $e->getFile(),
         'line' => $e->getLine(),
     ];
-    $stackTrace = [];
-    foreach ($frames as $i => $frame) {
-        $file = $frame['file'] ?? '(no file)';
-        $line = $frame['line'] ?? '(no line)';
-        $stackTrace[] = sprintf(
-            '#%s %s:%s',
-            $i,
-            trim_path_prefix($file),
-            $line,
+    $trace = [];
+    foreach ($frames as $frame) {
+        $trace[] = [
+            'file'      => trim_path_prefix($frame['file'] ?? ''),
+            'line'      => $frame['line'] ?? null,
+            'class'     => $frame['class'] ?? null,
+            'type'      => $frame['type'] ?? null,
+            'function'  => $frame['function'] ?? null,
+        ];
+    }
+    return $trace;
+}
+
+function trace_to_call_points(array $trace): array
+{
+    return array_map(fn($frame) => frame_to_call_point($frame), $trace);
+}
+
+function frame_to_call_point(array $frame): string
+{
+    if ($frame['class']) {
+        return sprintf(
+            '%s(%s): %s%s%s()',
+            $frame['file'],
+            $frame['line'],
+            $frame['class'],
+            $frame['type'],
+            $frame['function'],
+        );
+    } elseif ($frame['function']) {
+        return sprintf(
+            '%s(%s): %s()',
+            $frame['file'],
+            $frame['line'],
+            $frame['function'],
+        );
+    } else {
+        return sprintf(
+            '%s(%s)',
+            $frame['file'],
+            $frame['line'],
         );
     }
-    return $stackTrace;
 }
 
 /**
  * Trim path prefix for privacy/security reasons
  *
- * Example: "/var/www/rss-bridge/index.php" => "index.php"
+ * Example: "/home/davidsf/rss-bridge/index.php" => "index.php"
  */
 function trim_path_prefix(string $filePath): string
 {
@@ -120,4 +197,24 @@ function parse_mime_type($url)
     }
 
     return 'application/octet-stream';
+}
+
+/**
+ * https://stackoverflow.com/a/2510459
+ */
+function format_bytes(int $bytes, $precision = 2)
+{
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+    $bytes = max($bytes, 0);
+    $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+    $pow = min($pow, count($units) - 1);
+    $bytes /= pow(1024, $pow);
+
+    return round($bytes, $precision) . ' ' . $units[$pow];
+}
+
+function now(): \DateTimeImmutable
+{
+    return new \DateTimeImmutable();
 }
