@@ -26,7 +26,6 @@ COPY ./config/nginx.conf /etc/nginx/sites-enabled/default
 COPY --chown=www-data:www-data ./ /app/
 
 COPY --from=curlimpersonate /usr/local/lib/libcurl-impersonate-ff.so /usr/local/lib/curl-impersonate/
-
 ENV LD_PRELOAD /usr/local/lib/curl-impersonate/libcurl-impersonate-ff.so
 
 ENV CURL_IMPERSONATE ff91esr
