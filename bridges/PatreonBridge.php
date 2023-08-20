@@ -6,13 +6,13 @@ class PatreonBridge extends BridgeAbstract
     const URI = 'https://www.patreon.com/';
     const CACHE_TIMEOUT = 300; // 5min
     const DESCRIPTION = 'Returns posts by creators on Patreon';
-    const MAINTAINER = 'Roliga';
-    const PARAMETERS = [ [
+    const MAINTAINER = 'Roliga, mruac';
+    const PARAMETERS = [[
         'creator' => [
             'name' => 'Creator',
             'type' => 'text',
             'required' => true,
-            'exampleValue' => 'sanityinc',
+            'exampleValue' => 'user?u=13425451',
             'title' => 'Creator name as seen in their page URL'
         ]
     ]];
@@ -100,12 +100,14 @@ class PatreonBridge extends BridgeAbstract
             );
             $item['author'] = $user->full_name;
 
-            if (isset($post->attributes->image)) {
-                $item['content'] .= '<p><a href="'
-                    . $post->attributes->url
-                    . '"><img src="'
-                    . $post->attributes->image->thumb_url
-                    . '" /></a></p>';
+            $image = $post->attributes->image ?? null;
+            if ($image) {
+                $logo = sprintf(
+                    '<p><a href="%s"><img src="%s" /></a></p>',
+                    $post->attributes->url,
+                    $image->thumb_url ?? $image->url ?? $this->getURI()
+                );
+                $item['content'] .= $logo;
             }
 
             if (isset($post->attributes->content)) {
@@ -187,7 +189,13 @@ class PatreonBridge extends BridgeAbstract
     public function getName()
     {
         if (!is_null($this->getInput('creator'))) {
-            return $this->getInput('creator') . ' posts';
+            $html = getSimpleHTMLDOMCached($this->getURI());
+            if ($html) {
+                preg_match('#"name": "(.*)"#', $html->save(), $matches);
+                return 'Patreon posts from ' . stripcslashes($matches[1]);
+            } else {
+                return $this->getInput('creator') . 'posts from Patreon';
+            }
         }
 
         return parent::getName();
