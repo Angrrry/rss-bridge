@@ -22,7 +22,7 @@ final class RssBridge
         set_exception_handler(function (\Throwable $e) {
             self::$logger->error('Uncaught Exception', ['e' => $e]);
             http_response_code(500);
-            print render(__DIR__ . '/../templates/error.html.php', ['e' => $e]);
+            print render(__DIR__ . '/../templates/exception.html.php', ['e' => $e]);
             exit(1);
         });
 
@@ -30,6 +30,8 @@ final class RssBridge
             if ((error_reporting() & $code) === 0) {
                 return false;
             }
+            // In the future, uncomment this:
+            //throw new \ErrorException($message, 0, $code, $file, $line);
             $text = sprintf(
                 '%s at %s line %s',
                 sanitize_root($message),
@@ -117,7 +119,7 @@ final class RssBridge
         } catch (\Throwable $e) {
             self::$logger->error('Exception in RssBridge::main()', ['e' => $e]);
             http_response_code(500);
-            print render(__DIR__ . '/../templates/error.html.php', ['e' => $e]);
+            print render(__DIR__ . '/../templates/exception.html.php', ['e' => $e]);
         }
     }
 
