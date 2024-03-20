@@ -1,25 +1,13 @@
 <?php
 
 /**
- * This file is part of RSS-Bridge, a PHP project capable of generating RSS and
- * Atom feeds for websites that don't have one.
- *
- * For the full license information, please view the UNLICENSE file distributed
- * with this source code.
- *
- * @package Core
- * @license http://unlicense.org/ UNLICENSE
- * @link    https://github.com/rss-bridge/rss-bridge
- */
-
-/**
  * Configuration module for RSS-Bridge.
  *
  * This class implements a configuration module for RSS-Bridge.
  */
 final class Configuration
 {
-    private const VERSION = '2023-09-24';
+    private const VERSION = '2024-02-02';
 
     private static $config = [];
 
@@ -27,15 +15,7 @@ final class Configuration
     {
     }
 
-    /**
-     * Verifies the current installation of RSS-Bridge and PHP.
-     *
-     * Returns an error message and aborts execution if the installation does
-     * not satisfy the requirements of RSS-Bridge.
-     *
-     * @return void
-     */
-    public static function verifyInstallation()
+    public static function checkInstallation(): array
     {
         $errors = [];
 
@@ -69,10 +49,7 @@ final class Configuration
         if (!extension_loaded('json')) {
             $errors[] = 'json extension not loaded';
         }
-
-        if ($errors) {
-            throw new \Exception(sprintf('Configuration error: %s', implode(', ', $errors)));
-        }
+        return $errors;
     }
 
     public static function loadConfiguration(array $customConfig = [], array $env = [])
@@ -82,7 +59,7 @@ final class Configuration
         }
         $config = parse_ini_file(__DIR__ . '/../config.default.ini.php', true, INI_SCANNER_TYPED);
         if (!$config) {
-            throw new \Exception('Error parsing config');
+            throw new \Exception('Error parsing ini config');
         }
         foreach ($config as $header => $section) {
             foreach ($section as $key => $value) {

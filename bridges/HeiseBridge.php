@@ -125,9 +125,8 @@ class HeiseBridge extends FeedExpander
         );
     }
 
-    protected function parseItem($feedItem)
+    protected function parseItem(array $item)
     {
-        $item = parent::parseItem($feedItem);
         $sessioncookie = $this->getInput('sessioncookie');
 
         // strip rss parameter
@@ -180,7 +179,7 @@ class HeiseBridge extends FeedExpander
             }
         }
 
-        $categories = $article->find('.article-footer__topics ul.topics li.topics__item');
+        $categories = $article->find('.article-footer__topics ul.topics li.topics__item a-topic a');
         foreach ($categories as $category) {
             $item['categories'][] = trim($category->plaintext);
         }

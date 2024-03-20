@@ -71,16 +71,14 @@ class DeutscheWelleBridge extends FeedExpander
         $this->collectExpandableDatas($this->getInput('feed'));
     }
 
-    protected function parseItem($item)
+    protected function parseItem(array $item)
     {
-        $item = parent::parseItem($item);
+        $parsedUri = parse_url($item['uri']);
+        unset($parsedUri['query']);
+        $item['uri'] = $this->unparseUrl($parsedUri);
 
-        $parsedUrl = parse_url($item['uri']);
-        unset($parsedUrl['query']);
-        $url = $this->unparseUrl($parsedUrl);
-
-        $page = getSimpleHTMLDOM($url);
-        $page = defaultLinkTo($page, $url);
+        $page = getSimpleHTMLDOM($item['uri']);
+        $page = defaultLinkTo($page, $item['uri']);
 
         $article = $page->find('article', 0);
 
@@ -112,6 +110,13 @@ class DeutscheWelleBridge extends FeedExpander
         foreach ($article->find('img') as $img) {
             $img->width = null;
             $img->height = null;
+        }
+
+        // remove bad img src's added by defaultLinkTo() above
+        // these images should have src="" and will then use
+        // the srcset attribute to load the best image for the displayed size
+        foreach ($article->find('figure > picture > img') as $img) {
+            $img->src = '';
         }
 
         // replace lazy-loaded images

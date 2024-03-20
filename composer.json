@@ -28,6 +28,7 @@
         "ext-openssl": "*",
         "ext-libxml": "*",
         "ext-simplexml": "*",
+        "ext-dom": "*",
         "ext-json": "*"
     },
     "require-dev": {
@@ -35,11 +36,11 @@
         "squizlabs/php_codesniffer": "^3.6"
     },
     "suggest": {
+        "php-webdriver/webdriver": "Required for Selenium usage",
         "ext-memcached": "Allows to use memcached as cache type",
         "ext-sqlite3": "Allows to use an SQLite database for caching",
         "ext-zip": "Required for FDroidRepoBridge",
-        "ext-intl": "Required for OLXBridge",
-        "ext-dom": "Allows to use some bridges based on XPath expressions"
+        "ext-intl": "Required for OLXBridge"
     },
     "autoload-dev": {
         "psr-4": {

@@ -58,23 +58,29 @@ class SitemapBridge extends CssSelectorBridge
                 'title' => 'Some sites set their logo as thumbnail for every article. Use this option to discard it.',
                 'type' => 'checkbox',
             ],
+            'thumbnail_as_header' => [
+                'name' => '[Optional] Insert thumbnail as article header',
+                'title' => 'Insert article main image on top of article contents.',
+                'type' => 'checkbox',
+            ],
             'limit' => self::LIMIT
         ]
     ];
 
     public function collectData()
     {
-        $url = $this->getInput('home_page');
+        $this->homepageUrl = $this->getInput('home_page');
         $url_pattern = $this->getInput('url_pattern');
         $content_selector = $this->getInput('content_selector');
         $content_cleanup = $this->getInput('content_cleanup');
         $title_cleanup = $this->getInput('title_cleanup');
         $site_map = $this->getInput('site_map');
         $discard_thumbnail = $this->getInput('discard_thumbnail');
+        $thumbnail_as_header = $this->getInput('thumbnail_as_header');
         $limit = $this->getInput('limit');
 
-        $this->feedName = $this->getPageTitle($url, $title_cleanup);
-        $sitemap_url = empty($site_map) ? $url : $site_map;
+        $this->feedName = $this->titleCleanup($this->getPageTitle($this->homepageUrl), $title_cleanup);
+        $sitemap_url = empty($site_map) ? $this->homepageUrl : $site_map;
         $sitemap_xml = $this->getSitemapXml($sitemap_url, !empty($site_map));
         $links = $this->sitemapXmlToList($sitemap_xml, $url_pattern, empty($limit) ? 10 : $limit);
 
@@ -86,6 +92,9 @@ class SitemapBridge extends CssSelectorBridge
             $item = $this->expandEntryWithSelector($link, $content_selector, $content_cleanup, $title_cleanup);
             if ($discard_thumbnail && isset($item['enclosures'])) {
                 unset($item['enclosures']);
+            }
+            if ($thumbnail_as_header && isset($item['enclosures'])) {
+                $item['content'] = '<p><img src="' . $item['enclosures'][0] . '" /></p>' . $item['content'];
             }
             $this->items[] = $item;
         }
@@ -103,7 +112,13 @@ class SitemapBridge extends CssSelectorBridge
             $robots_txt = getSimpleHTMLDOM(urljoin($url, '/robots.txt'))->outertext;
             preg_match('/Sitemap: ([^ ]+)/', $robots_txt, $matches);
             if (empty($matches)) {
-                returnClientError('Failed to determine Sitemap from robots.txt. Try setting it manually.');
+                $sitemap = getSimpleHTMLDOM(urljoin($url, '/sitemap.xml'));
+                if (!empty($sitemap->find('urlset, sitemap'))) {
+                    $url = urljoin($url, '/sitemap.xml');
+                    return $sitemap;
+                } else {
+                    returnClientError('Failed to locate Sitemap from /robots.txt or /sitemap.xml. Try setting it manually.');
+                }
             }
             $url = $matches[1];
         }
@@ -125,7 +140,7 @@ class SitemapBridge extends CssSelectorBridge
         foreach ($sitemap->find('sitemap') as $nested_sitemap) {
             $url = $nested_sitemap->find('loc');
             if (!empty($url)) {
-                $url = $url[0]->plaintext;
+                $url = trim($url[0]->plaintext);
                 if (str_ends_with(strtolower($url), '.xml')) {
                     $nested_sitemap_xml = $this->getSitemapXml($url, true);
                     $nested_sitemap_links = $this->sitemapXmlToList($nested_sitemap_xml, $url_pattern, null, true);
@@ -142,8 +157,8 @@ class SitemapBridge extends CssSelectorBridge
             $url = $item->find('loc');
             $lastmod = $item->find('lastmod');
             if (!empty($url) && !empty($lastmod)) {
-                $url = $url[0]->plaintext;
-                $lastmod = $lastmod[0]->plaintext;
+                $url = trim($url[0]->plaintext);
+                $lastmod = trim($lastmod[0]->plaintext);
                 $timestamp = strtotime($lastmod);
                 if (empty($url_pattern) || preg_match('/' . $url_pattern . '/', $url) === 1) {
                     $links[$url] = $timestamp;

@@ -1,18 +1,6 @@
 <?php
 
 /**
- * This file is part of RSS-Bridge, a PHP project capable of generating RSS and
- * Atom feeds for websites that don't have one.
- *
- * For the full license information, please view the UNLICENSE file distributed
- * with this source code.
- *
- * @package Core
- * @license http://unlicense.org/ UNLICENSE
- * @link    https://github.com/rss-bridge/rss-bridge
- */
-
-/**
  * Checks if the website for a given bridge is reachable.
  *
  * **Remarks**
@@ -31,13 +19,13 @@ class ConnectivityAction implements ActionInterface
         $this->bridgeFactory = new BridgeFactory();
     }
 
-    public function execute(array $request)
+    public function execute(Request $request)
     {
         if (!Debug::isEnabled()) {
             return new Response('This action is only available in debug mode!', 403);
         }
 
-        $bridgeName = $request['bridge'] ?? null;
+        $bridgeName = $request->get('bridge');
         if (!$bridgeName) {
             return render_template('connectivity.html.php');
         }

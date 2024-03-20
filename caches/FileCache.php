@@ -30,7 +30,8 @@ class FileCache implements CacheInterface
         if (!file_exists($cacheFile)) {
             return $default;
         }
-        $item = unserialize(file_get_contents($cacheFile));
+        $data = file_get_contents($cacheFile);
+        $item = unserialize($data);
         if ($item === false) {
             $this->logger->warning(sprintf('Failed to unserialize: %s', $cacheFile));
             $this->delete($key);
@@ -48,11 +49,12 @@ class FileCache implements CacheInterface
     {
         $item = [
             'key'           => $key,
-            'value'         => $value,
             'expiration'    => $ttl === null ? 0 : time() + $ttl,
+            'value'         => $value,
         ];
         $cacheFile = $this->createCacheFile($key);
         $bytes = file_put_contents($cacheFile, serialize($item), LOCK_EX);
+        // todo: Consider tightening the permissions of the created file. It usually allow others to read, depending on umask
         if ($bytes === false) {
             // Consider just logging the error here
             throw new \Exception(sprintf('Failed to write to: %s', $cacheFile));
@@ -87,7 +89,8 @@ class FileCache implements CacheInterface
             if (isset($excluded[$filename]) || !is_file($cacheFile)) {
                 continue;
             }
-            $item = unserialize(file_get_contents($cacheFile));
+            $data = file_get_contents($cacheFile);
+            $item = unserialize($data);
             if ($item === false) {
                 unlink($cacheFile);
                 continue;

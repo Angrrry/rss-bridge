@@ -140,7 +140,7 @@ function _sanitize_path_name(string $s, string $pathName): string
 }
 
 /**
- * This is buggy because strip tags removes a lot that isn't html
+ * This is buggy because strip_tags() removes a lot that isn't html
  */
 function is_html(string $text): bool
 {
@@ -171,6 +171,7 @@ function parse_mime_type($url)
             'jpg' => 'image/jpeg',
             'gif' => 'image/gif',
             'png' => 'image/png',
+            'webp' => 'image/webp',
             'image' => 'image/*',
             'mp3' => 'audio/mpeg',
         ];

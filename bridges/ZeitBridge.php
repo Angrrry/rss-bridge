@@ -50,19 +50,17 @@ class ZeitBridge extends FeedExpander
             'defaultValue' => 5
         ]
     ]];
-    const LIMIT = 5;
 
     public function collectData()
     {
-        $this->collectExpandableDatas(
-            $this->getInput('category'),
-            $this->getInput('limit') ?: static::LIMIT
-        );
+        $url = $this->getInput('category');
+        $limit = $this->getInput('limit') ?: 5;
+
+        $this->collectExpandableDatas($url, $limit);
     }
 
-    protected function parseItem($item)
+    protected function parseItem(array $item)
     {
-        $item = parent::parseItem($item);
         $item['enclosures'] = [];
 
         $headers = [
@@ -89,7 +87,7 @@ class ZeitBridge extends FeedExpander
         // remove known bad elements
         foreach (
             $article->find(
-                'aside, .visually-hidden, .carousel-container, #tickaroo-liveblog, .zplus-badge, .article-heading__container--podcast'
+                'aside, .visually-hidden, .carousel-container, #tickaroo-liveblog, .zplus-badge, .article-heading__container--podcast, div[data-paywall], .js-embed-consent'
             ) as $bad
         ) {
             $bad->remove();
